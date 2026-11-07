@@ -25,7 +25,7 @@ Choose **only** the JAR matching your Minecraft Java Edition version:
 4. Copy exactly one matching ClickCrystals Modified JAR into `.minecraft/mods/`.
 5. Launch Minecraft, review the mod's settings, and test custom scripts in a local world first.
 
-### Changes currently committed on the 26.2 development branch
+### Changes committed on the 1.21.11, 26.1.2 and 26.2 development branches
 - Introduced independent per-script `state` variables and `if_state` comparisons.
 - Introduced `gate` to limit repeated command execution.
 - Fixed `getMacro()` checking the wrong map.
@@ -64,7 +64,7 @@ ClickCrystals Modified — независимый форк ClickCrystals под 
 4. Перенеси один подходящий JAR ClickCrystals Modified в `.minecraft/mods/`.
 5. Запусти игру, проверь настройки и сначала тестируй пользовательские скрипты в одиночном мире.
 
-### Реализованные изменения в ветке 26.2
+### Изменения в ветках 1.21.11, 26.1.2 и 26.2
 - Переменные `state` с изолированным состоянием каждого скрипта и сравнения `if_state`.
 - `gate` для ограничения частоты повторных команд.
 - Исправлена ошибка поиска макросов через `getMacro()`.
