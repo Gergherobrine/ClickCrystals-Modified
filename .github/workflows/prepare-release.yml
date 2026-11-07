@@ -1,0 +1,53 @@
+name: Prepare v1.4.4 draft with four verified JARs
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_release:
+        description: "Build four versions and prepare the draft release"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  builds:
+    uses: ./.github/workflows/build-targets.yml
+
+  prepare_release:
+    if: ${{ inputs.confirm_release }}
+    name: Verify JARs and prepare GitHub draft
+    needs: builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: clickcrystals-modified-*
+          path: artifacts
+      - name: Verify four exact target artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir dist
+          for game in 1.21.11 26.1.2 26.2 26.3; do
+            name="ClickCrystals-Modified-${game}-1.4.4-dev.1.jar"
+            source="artifacts/clickcrystals-modified-${game}/${name}"
+            test -f "$source" || { echo "Missing verified build: $source"; exit 1; }
+            test "$(stat -c%s "$source")" -gt 10000 || { echo "Artifact too small: $source"; exit 1; }
+            unzip -t "$source" >/dev/null || { echo "Invalid jar: $source"; exit 1; }
+            cp "$source" "dist/ClickCrystals-Modified-${game}-1.4.4.jar"
+          done
+          test "$(find dist -type f -name '*.jar' | wc -l)" -eq 4
+          sha256sum dist/*.jar > dist/SHA256SUMS.txt
+      - name: Create draft release (not published until reviewed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.4 --draft --target "${GITHUB_SHA}" \
+            --title "ClickCrystals Modified 1.4.4" \
+            --notes-file RELEASE_NOTES_1.4.4.md \
+            dist/*.jar dist/SHA256SUMS.txt
