@@ -1,79 +1,75 @@
-# ClickCrystals Modified 1.4.4 — Release Notes / Примечания к выпуску
-
-> **Release candidate documentation.** This file does not mean that v1.4.4 has been published.
-> **Документация для подготовки релиза.** Этот файл не означает, что версия 1.4.4 уже выпущена.
+# ClickCrystals Modified 1.4.4
 
 ## English
 
-### Overview
-ClickCrystals Modified is an independent fork of ClickCrystals, distributed under the original MIT license.
-The goal of v1.4.4 is a consistent scripting environment and independent Minecraft version builds.
+### About this release
+ClickCrystals Modified 1.4.4 is an **unofficial preview release** of a Fabric PvP utility mod, derived from ClickCrystals. It provides three separately compiled builds; Minecraft 26.3 is not supported in this release.
 
-### Planned downloads
-Choose **only** the JAR matching your Minecraft Java Edition version:
-- `ClickCrystals-Modified-1.21.11-1.4.4.jar` — Minecraft 1.21.11 (Fabric; Java 21)
-- `ClickCrystals-Modified-26.1.2-1.4.4.jar` — Minecraft 26.1.2 (Fabric; Java 25)
-- `ClickCrystals-Modified-26.2-1.4.4.jar` — Minecraft 26.2 (Fabric; Java 25)
-- `ClickCrystals-Modified-26.3-1.4.4.jar` — Minecraft 26.3 (Fabric; Java 25)
+### Downloads — choose exactly one
+| File | Minecraft Java Edition | Java |
+| --- | --- | --- |
+| `ClickCrystals-Modified-1.21.11-1.4.4.jar` | 1.21.11 | 21 |
+| `ClickCrystals-Modified-26.1.2-1.4.4.jar` | 26.1.2 | 25 |
+| `ClickCrystals-Modified-26.2-1.4.4.jar` | 26.2 | 25 |
 
-**These filenames are targets, not currently verified artifacts.** Do not publish downloads until each has passed build and game-start tests.
+The 26.1.2 build is derived from the upstream 26.1 series. It compiles successfully but has **not been smoke-tested in-game on 26.1.2**. All three builds passed automated Gradle compilation, not complete gameplay testing.
+
+### Changes
+- Introduced per-script variables: `state set`, `state add`, `state clear`, and `state reset`.
+- Added `if_state` conditions and `gate` to reduce unintended repeated command execution.
+- Removed automatic Discord invitations and prominent Discord shortcuts from the main UI.
+- Updated branding and Gradle build identifiers.
+- Corrected the macro lookup condition on the 26.2 branch.
+- Preserved original modules and the upstream MIT license. Some optional upstream components and remote integrations remain and may receive further work.
 
 ### Installation
-1. Install the Fabric Loader for the exact game version.
-2. Install a matching Fabric API.
-3. Remove any older ClickCrystals JAR from your `mods` directory; do not run the original and the fork together (they share internal IDs).
-4. Copy exactly one matching ClickCrystals Modified JAR into `.minecraft/mods/`.
-5. Launch Minecraft, review the mod's settings, and test custom scripts in a local world first.
+1. Install Minecraft Java Edition, Fabric Loader, and the matching Fabric API for your game version.
+2. Remove the original ClickCrystals JAR and older copies of ClickCrystals Modified from the `mods` folder. The fork still uses the original internal mod ID, so the two versions must not run together.
+3. Download the **one** JAR matching your Minecraft version.
+4. Place the JAR in `.minecraft/mods/`, start the game, and check the mods list.
+5. Test scripts and PvP modules in a local world before joining multiplayer servers.
+6. The `SHA256SUMS.txt` file can be used to verify the downloaded JAR files.
 
-### Changes committed on the 1.21.11, 26.1.2 and 26.2 development branches
-- Introduced independent per-script `state` variables and `if_state` comparisons.
-- Introduced `gate` to limit repeated command execution.
-- Fixed `getMacro()` checking the wrong map.
-- Removed the first-open Discord invitation and Discord shortcut from the main screen.
-- Disabled automatic bulletin fetching; retained the upstream MIT license.
+### Notes
+This is marked as a **pre-release** because the three game builds have not undergone in-game smoke tests. No claim is made that any automation is undetectable by anti-cheat systems. Follow the rules of each server.
 
-### Compatibility and security
-No claim is made that the client bypasses server anticheat systems. Respect server rules.
-No guaranteed release-ready builds exist until CI and in-game tests finish.
-
-### Credits and license
-Based on ClickCrystals © 2023 ImproperIssues and its contributors, MIT License.
-This is an unofficial derivative, not an official upstream release. Keep the upstream `LICENSE` and `CREDITS.txt`.
+### Attribution and license
+Based on ClickCrystals, © 2023 ImproperIssues and contributors, under the MIT License. This is an unofficial modification, not endorsed by the upstream maintainers. The original `LICENSE` and `CREDITS.txt` are retained in the source repository.
 
 ---
 
 ## Русский
 
-### Обзор
-ClickCrystals Modified — независимый форк ClickCrystals под оригинальной лицензией MIT.
-Цель версии 1.4.4 — единая система создания пользовательских модулей и отдельные сборки для разных версий Minecraft.
+### О выпуске
+ClickCrystals Modified 1.4.4 — **предварительный релиз** неофициального форка ClickCrystals для Fabric. Подготовлены три независимые сборки. Minecraft 26.3 в этот выпуск не входит.
 
-### Планируемые файлы
-Выбирай **только** JAR под свою версию Minecraft Java Edition:
-- `ClickCrystals-Modified-1.21.11-1.4.4.jar` — Minecraft 1.21.11 (Fabric; Java 21)
-- `ClickCrystals-Modified-26.1.2-1.4.4.jar` — Minecraft 26.1.2 (Fabric; Java 25)
-- `ClickCrystals-Modified-26.2-1.4.4.jar` — Minecraft 26.2 (Fabric; Java 25)
-- `ClickCrystals-Modified-26.3-1.4.4.jar` — Minecraft 26.3 (Fabric; Java 25)
+### Загрузки — выбирай только один файл
+| Файл | Minecraft Java Edition | Java |
+| --- | --- | --- |
+| `ClickCrystals-Modified-1.21.11-1.4.4.jar` | 1.21.11 | 21 |
+| `ClickCrystals-Modified-26.1.2-1.4.4.jar` | 26.1.2 | 25 |
+| `ClickCrystals-Modified-26.2-1.4.4.jar` | 26.2 | 25 |
 
-**Это названия запланированных файлов, а не подтверждённые готовые сборки.** Не публикуй JAR до успешной сборки и запуска в игре.
+Вариант 26.1.2 основан на серии 26.1 исходного проекта. Он успешно компилируется, но **не проходил проверку запуска в Minecraft 26.1.2**. Все три сборки проходят автоматическую компиляцию Gradle, а не полноценные игровые испытания.
+
+### Изменения
+- Добавлено состояние скриптов: команды `state set`, `state add`, `state clear`, `state reset`.
+- Добавлены `if_state` и `gate` для условий и предотвращения лишних повторных действий.
+- Убраны автоматическое приглашение в Discord и заметные Discord-ссылки из основного интерфейса.
+- Обновлены название проекта и имена сборок.
+- В версии 26.2 исправлена ошибка поиска макросов.
+- Сохранены исходные модули и лицензия MIT. Некоторые дополнительные сетевые возможности оригинала ещё требуют отдельной переработки.
 
 ### Установка
-1. Установи Fabric Loader для нужной версии Minecraft.
-2. Установи совместимый Fabric API.
-3. Удали старый JAR ClickCrystals из папки `mods`: оригинал и форк одновременно запускать нельзя (внутренние идентификаторы совпадают).
-4. Перенеси один подходящий JAR ClickCrystals Modified в `.minecraft/mods/`.
-5. Запусти игру, проверь настройки и сначала тестируй пользовательские скрипты в одиночном мире.
+1. Установи Minecraft Java Edition, Fabric Loader и подходящую Fabric API.
+2. Удали из папки `mods` оригинальный ClickCrystals и прежние версии ClickCrystals Modified. У форка всё ещё исходный внутренний mod ID: одновременно они работать не должны.
+3. Скачай **только один** JAR под свою версию Minecraft.
+4. Перенеси его в `.minecraft/mods/`, запусти игру и проверь наличие мода.
+5. Сначала проверь пользовательские скрипты и PvP-модули в одиночном мире.
+6. При необходимости проверь контрольные суммы JAR по файлу `SHA256SUMS.txt`.
 
-### Изменения в ветках 1.21.11, 26.1.2 и 26.2
-- Переменные `state` с изолированным состоянием каждого скрипта и сравнения `if_state`.
-- `gate` для ограничения частоты повторных команд.
-- Исправлена ошибка поиска макросов через `getMacro()`.
-- Убраны приглашение в Discord при первом открытии и ссылка на Discord в главном экране.
-- Отключена автоматическая загрузка объявлений; лицензия MIT сохранена.
-
-### Совместимость
-Гарантий обхода античитов нет. Соблюдай правила серверов. Релиз нельзя считать готовым до CI и игровых тестов.
+### Важно
+Релиз обозначен как **предварительный**, потому что успешная сборка не подтверждает работу всех модулей в игре. Гарантий обхода античитов нет. Учитывай правила сервера.
 
 ### Авторы и лицензия
-Основано на ClickCrystals © 2023 ImproperIssues и работах участников проекта, MIT License.
-Это неофициальная модификация. Файлы `LICENSE` и `CREDITS.txt` должны сохраняться.
+Основано на ClickCrystals, © 2023 ImproperIssues и участниках проекта, лицензия MIT. Это неофициальная модификация без одобрения авторов оригинального проекта. Исходные `LICENSE` и `CREDITS.txt` сохраняются в репозитории.
