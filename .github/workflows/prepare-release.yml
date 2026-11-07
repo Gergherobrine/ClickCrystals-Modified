@@ -50,4 +50,4 @@ jobs:
           gh release create v1.4.4 --draft --target "${GITHUB_SHA}" \
             --title "ClickCrystals Modified 1.4.4" \
             --notes-file RELEASE_NOTES_1.4.4.md \
-            dist/*.jar dist/SHA256SUMS.txt
+            dist/*.jar dist/SHA256SUMS.txt RELEASE_NOTES_1.4.4.md
