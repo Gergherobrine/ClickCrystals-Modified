@@ -1,0 +1,65 @@
+name: Publish 1.4.5 development preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-dev-1.4.5.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: Verify three dev JARs and publish preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout documentation
+        uses: actions/checkout@v4
+      - name: Download three compiled development artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 42399607599
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pattern: ClickCrystals-Modified-*
+          merge-multiple: true
+          path: release-assets
+      - name: Validate all three target JARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in 1.21.11 26.1.2 26.2; do
+            jar="release-assets/ClickCrystals-Modified-${game}-1.4.5-dev.1.jar"
+            test -f "$jar"
+            test "$(stat -c%s "$jar")" -gt 100000
+            unzip -t "$jar" > /dev/null
+            python3 - "$jar" "$game" <<'PY'
+          import json, sys, zipfile
+          jar, game = sys.argv[1:]
+          with zipfile.ZipFile(jar) as z:
+              mod = json.loads(z.read('fabric.mod.json'))
+          assert mod['version'] == game + '-1.4.5-dev.1', mod
+          assert mod['name'] == 'ClickCrystals Modified', mod
+          print('Verified', game)
+          PY
+          done
+          test "$(find release-assets -maxdepth 1 -name '*.jar' | wc -l)" -eq 3
+          cp DEV_1.4.5.md release-assets/DEV_1.4.5.md
+          ( cd release-assets && sha256sum *.jar > SHA256SUMS.txt )
+      - name: Publish test build on GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.5-dev.1 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "ClickCrystals Modified 1.4.5-dev.1" \
+            --prerelease \
+            --notes-file DEV_1.4.5.md \
+            release-assets/ClickCrystals-Modified-1.21.11-1.4.5-dev.1.jar \
+            release-assets/ClickCrystals-Modified-26.1.2-1.4.5-dev.1.jar \
+            release-assets/ClickCrystals-Modified-26.2-1.4.5-dev.1.jar \
+            release-assets/DEV_1.4.5.md \
+            release-assets/SHA256SUMS.txt
