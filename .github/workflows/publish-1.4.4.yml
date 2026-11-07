@@ -1,0 +1,126 @@
+name: Publish ClickCrystals Modified 1.4.4 (three versions)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-1.4.4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-clickcrystals-modified-v1.4.4
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Minecraft ${{ matrix.game }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            branch: "mc/1.21.11"
+            java: "21"
+          - game: "26.1.2"
+            branch: "mc/26.1.2"
+            java: "25"
+          - game: "26.2"
+            branch: "mc/26.2"
+            java: "25"
+    steps:
+      - name: Checkout version branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+      - name: Configure Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Compile Fabric mod
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean build --stacktrace
+      - name: Verify expected JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.4.jar"
+          test -f "$jar"
+          test "$(stat -c%s "$jar")" -gt 100000
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.game }}" <<'PY'
+          import json
+          import sys
+          import zipfile
+          jar, version = sys.argv[1:]
+          with zipfile.ZipFile(jar) as z:
+              meta = json.loads(z.read("fabric.mod.json"))
+          expected = version + "-1.4.4"
+          if meta.get("id") != "clickcrystals":
+              raise SystemExit("Unexpected mod id")
+          if meta.get("version") != expected:
+              raise SystemExit("Wrong embedded mod version: " + str(meta.get("version")))
+          if meta.get("name") != "ClickCrystals Modified":
+              raise SystemExit("Wrong embedded mod name: " + str(meta.get("name")))
+          print("Verified:", jar, expected)
+          PY
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-jar-${{ matrix.game }}
+          path: build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.4.jar
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish v1.4.4 (three JARs and bilingual notes)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Download all three verified builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-jar-*
+          path: release-files
+          merge-multiple: true
+      - name: Validate release attachments
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in 1.21.11 26.1.2 26.2; do
+            jar="release-files/ClickCrystals-Modified-${game}-1.4.4.jar"
+            test -f "$jar"
+            unzip -t "$jar" > /dev/null
+          done
+          count="$(find release-files -maxdepth 1 -type f -name '*.jar' | wc -l)"
+          test "$count" -eq 3
+          cp RELEASE_NOTES_1.4.4.md release-files/RELEASE_NOTES_1.4.4.md
+          ( cd release-files && sha256sum *.jar > SHA256SUMS.txt )
+          ls -lh release-files/
+      - name: Publish pre-release on GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.4 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "ClickCrystals Modified 1.4.4" \
+            --prerelease \
+            --notes-file RELEASE_NOTES_1.4.4.md \
+            release-files/ClickCrystals-Modified-1.21.11-1.4.4.jar \
+            release-files/ClickCrystals-Modified-26.1.2-1.4.4.jar \
+            release-files/ClickCrystals-Modified-26.2-1.4.4.jar \
+            release-files/RELEASE_NOTES_1.4.4.md \
+            release-files/SHA256SUMS.txt
