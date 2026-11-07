@@ -1,0 +1,58 @@
+name: Verify four Minecraft targets
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-targets.yml"
+      - "RELEASE_NOTES_1.4.4.md"
+jobs:
+  build:
+    name: "Fabric ${{ matrix.game }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            ref: "mc/1.21.11"
+            java: "21"
+          - game: "26.1.2"
+            ref: "mc/26.1.2"
+            java: "25"
+          - game: "26.2"
+            ref: "mc/26.2"
+            java: "25"
+          - game: "26.3"
+            ref: "mc/26.3"
+            java: "25"
+    steps:
+      - name: Checkout version branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Check target properties
+        shell: bash
+        run: |
+          grep -E '^\s*(minecraft_version|mod_version|fabric_version)=' gradle.properties
+          test -f LICENSE
+          test -f gradlew
+      - name: Compile and package
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build --stacktrace
+      - name: Upload compiled JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: clickcrystals-modified-${{ matrix.game }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error
+          retention-days: 14
