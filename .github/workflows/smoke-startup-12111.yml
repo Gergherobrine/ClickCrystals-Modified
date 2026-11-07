@@ -1,0 +1,64 @@
+name: Smoke-test Minecraft 1.21.11 dev.2 client initialization
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/smoke-startup-12111.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  client-startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "dev/1.21.11"
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Ensure a virtual display exists
+        shell: bash
+        run: |
+          if ! command -v xvfb-run >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y xvfb
+          fi
+      - name: Launch Fabric test client, inspect ClickCrystals bootstrap
+        shell: bash
+        run: |
+          set +e
+          chmod +x gradlew
+          timeout --signal=INT 160s \
+            xvfb-run -a -s "-screen 0 1280x720x24" \
+            ./gradlew --no-daemon runClient > client-smoke.log 2>&1
+          code=$?
+          set -e
+          echo "Minecraft startup process exit code: $code"
+          echo "--- Startup log tail ---"
+          tail -n 100 client-smoke.log
+          echo "--- Checking ClickCrystals initialization ---"
+          if grep -q "NumberFormatException" client-smoke.log; then
+            echo "Version parser regression found"
+            exit 1
+          fi
+          if grep -q "ClickCrystals had loaded successfully!" client-smoke.log; then
+            echo "ClickCrystals initialized successfully"
+          else
+            echo "ClickCrystals initialization not confirmed"
+            exit 1
+          fi
+      - name: Upload startup logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-startup-smoke-1.21.11-dev.2
+          path: client-smoke.log
+          if-no-files-found: warn
+          retention-days: 7
