@@ -48,10 +48,15 @@ jobs:
             echo "Version parser regression found"
             exit 1
           fi
-          if grep -q "ClickCrystals had loaded successfully!" client-smoke.log; then
+          log_file="$(find . -path '*/.clickcrystals/current.log' -type f -print -quit)"
+          echo "ClickCrystals' own log: ${log_file:-not found}"
+          if [ -n "$log_file" ]; then
+            tail -n 60 "$log_file"
+          fi
+          if [ -n "$log_file" ] && grep -q "ClickCrystals had loaded successfully!" "$log_file"; then
             echo "ClickCrystals initialized successfully"
           else
-            echo "ClickCrystals initialization not confirmed"
+            echo "ClickCrystals initialization not confirmed in the mod's dedicated logger"
             exit 1
           fi
       - name: Upload startup logs
@@ -59,6 +64,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: client-startup-smoke-1.21.11-dev.2
-          path: client-smoke.log
+          path: |
+            client-smoke.log
+            run/.clickcrystals/current.log
           if-no-files-found: warn
           retention-days: 7
