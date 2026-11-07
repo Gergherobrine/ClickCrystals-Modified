@@ -1,0 +1,82 @@
+name: Publish 1.4.5-dev.2 startup hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-dev2-startup-fix.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Download three CI-verified JAR artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 42401442075
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pattern: clickcrystals-dev2-*
+          merge-multiple: true
+          path: release-assets
+      - name: Validate three JARs and English/Russian release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in 1.21.11 26.1.2 26.2; do
+            jar="release-assets/ClickCrystals-Modified-${game}-1.4.5-dev.2.jar"
+            test -f "$jar"
+            test "$(stat -c%s "$jar")" -gt 100000
+            unzip -t "$jar" >/dev/null
+            python3 - "$jar" "$game" <<'PY'
+          import json, sys, zipfile
+          path, game = sys.argv[1:]
+          with zipfile.ZipFile(path) as z:
+              data = json.loads(z.read("fabric.mod.json"))
+              files = z.namelist()
+          assert data["version"] == game + "-1.4.5-dev.2"
+          assert data["name"] == "ClickCrystals Modified"
+          assert any(f.endswith("/VersionStrings.class") for f in files)
+          PY
+          done
+          test "$(find release-assets -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 3
+          cp DEV_1.4.5-dev.2.md release-assets/DEV_1.4.5-dev.2.md
+          (cd release-assets && sha256sum *.jar > SHA256SUMS.txt)
+      - name: Publish v1.4.5-dev.2 pre-release and three JARs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.5-dev.2 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "ClickCrystals Modified 1.4.5-dev.2 — Startup Hotfix" \
+            --prerelease \
+            --notes-file DEV_1.4.5-dev.2.md \
+            release-assets/ClickCrystals-Modified-1.21.11-1.4.5-dev.2.jar \
+            release-assets/ClickCrystals-Modified-26.1.2-1.4.5-dev.2.jar \
+            release-assets/ClickCrystals-Modified-26.2-1.4.5-dev.2.jar \
+            release-assets/DEV_1.4.5-dev.2.md \
+            release-assets/SHA256SUMS.txt
+      - name: Warn downloaders of previous startup-broken dev.1 build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous="$(gh release view v1.4.5-dev.1 --repo "${GITHUB_REPOSITORY}" --json body --jq .body)"
+          printf '%s\n\n%s\n' \
+            '**WARNING: Startup crash in this build. Use [1.4.5-dev.2](https://github.com/Gergherobrine/ClickCrystals-Modified/releases/tag/v1.4.5-dev.2) instead. The old version parser could throw NumberFormatException during initialization.**' \
+            "$previous" > dev1-warning.md
+          gh release edit v1.4.5-dev.1 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "[OBSOLETE — STARTUP CRASH] ClickCrystals Modified 1.4.5-dev.1" \
+            --notes-file dev1-warning.md
