@@ -1,0 +1,86 @@
+name: Verify 1.4.5-dev.2 startup regression and builds
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-startup-dev2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Minecraft ${{ matrix.game }} dev.2"
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            branch: "dev/1.21.11"
+            java: "21"
+          - game: "26.1.2"
+            branch: "dev/26.1.2"
+            java: "25"
+          - game: "26.2"
+            branch: "dev/26.2"
+            java: "25"
+    steps:
+      - name: Checkout exact development branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+      - name: Install correct Java version
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Test real prerelease version strings without Minecraft
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/smoke
+          javac -d build/smoke \
+            src/main/java/io/github/itzispyder/clickcrystals/client/system/VersionStrings.java \
+            tests/VersionStringsSmokeTest.java
+          java -cp build/smoke VersionStringsSmokeTest
+          javac -d build/smoke \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptState.java \
+            tests/ScriptStateSmokeTest.java
+          java -cp build/smoke ScriptStateSmokeTest
+      - name: Build mod
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean build --stacktrace
+      - name: Verify embedded Fabric metadata and JAR integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.2.jar"
+          test -f "$jar"
+          test "$(stat -c%s "$jar")" -gt 100000
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.game }}" <<'PY'
+          import json, sys, zipfile
+          path, game = sys.argv[1:]
+          with zipfile.ZipFile(path) as z:
+              meta = json.loads(z.read('fabric.mod.json'))
+              classes = z.namelist()
+          expected = game + '-1.4.5-dev.2'
+          assert meta['version'] == expected, (meta['version'], expected)
+          assert meta['name'] == 'ClickCrystals Modified', meta['name']
+          assert any('VersionStrings.class' in x for x in classes)
+          assert any('Version.class' in x for x in classes)
+          print('Validated Fabric metadata and version parser classes:', game)
+          PY
+      - name: Upload compiled development JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: clickcrystals-dev2-${{ matrix.game }}
+          path: build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.2.jar
+          if-no-files-found: error
+          retention-days: 14
