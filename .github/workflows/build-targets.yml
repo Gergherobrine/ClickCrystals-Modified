@@ -1,6 +1,7 @@
 name: Verify four Minecraft targets
 on:
   workflow_dispatch:
+  workflow_call:
   push:
     branches: [main]
     paths:
@@ -52,7 +53,6 @@ jobs:
         with:
           name: clickcrystals-modified-${{ matrix.game }}
           path: |
-            build/libs/*.jar
-            !build/libs/*-sources.jar
+            build/libs/*1.4.4-dev.1.jar
           if-no-files-found: error
           retention-days: 14
