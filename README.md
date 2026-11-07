@@ -8,7 +8,7 @@ An independent, MIT-licensed derivative of [ClickCrystals](https://github.com/cl
 
 | Minecraft | Source branch | Upstream foundation | Status |
 | --- | --- | --- | --- |
-| 1.21.11 | [mc/1.21.11](../../tree/mc/1.21.11) | ClickCrystals 1.3.9 | Compiled in GitHub Actions; runtime test pending |
+| 1.21.11 | [mc/1.21.11](../../tree/mc/1.21.11) | ClickCrystals 1.3.9 + Modified CCS state | Ported changes; rebuild pending |
 | 26.1.2 | [mc/26.1.2](../../tree/mc/26.1.2) | ClickCrystals 1.4.0 (26.1 series) | Build verification pending |
 | 26.2 | [mc/26.2](../../tree/mc/26.2) | ClickCrystals 1.4.3 + Modified CCS state | Build verification pending |
 | 26.3 | [mc/26.3](../../tree/mc/26.3) | 26.2 source as porting base | Compile failed: incompatible 26.3 APIs |
@@ -17,13 +17,13 @@ The development branch for 26.3 is *not* presently a compatible 26.3 binary; it 
 
 ## What's implemented
 
-On `mc/26.2`, ClickScript gains:
+On `mc/1.21.11`, `mc/26.1.2`, and `mc/26.2`, ClickScript gains:
 - `state set <name> <value>`, `state add <name> <number>`, `state clear <name>`, `state reset`;
 - `if_state <name> <op> <value> then <command>` with `eq`, `ne`, `gt`, `ge`, `lt`, `le`;
 - `gate <name> <milliseconds> then <command>` for guarded repetitions;
 - a macro lookup fix and removal of unsolicited Discord invitations.
 
-**These 26.2 changes have not yet been ported to the other version branches.**
+**26.3 remains a separate, unfinished source migration and cannot yet be distributed as a working build.**
 
 ## Builds & release
 
