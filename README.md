@@ -8,10 +8,10 @@ An independent, MIT-licensed derivative of [ClickCrystals](https://github.com/cl
 
 | Minecraft | Source branch | Upstream foundation | Status |
 | --- | --- | --- | --- |
-| 1.21.11 | [mc/1.21.11](../../tree/mc/1.21.11) | ClickCrystals 1.3.9 | Build verification pending |
+| 1.21.11 | [mc/1.21.11](../../tree/mc/1.21.11) | ClickCrystals 1.3.9 | Compiled in GitHub Actions; runtime test pending |
 | 26.1.2 | [mc/26.1.2](../../tree/mc/26.1.2) | ClickCrystals 1.4.0 (26.1 series) | Build verification pending |
 | 26.2 | [mc/26.2](../../tree/mc/26.2) | ClickCrystals 1.4.3 + Modified CCS state | Build verification pending |
-| 26.3 | [mc/26.3](../../tree/mc/26.3) | 26.2 source as porting base | Port not completed |
+| 26.3 | [mc/26.3](../../tree/mc/26.3) | 26.2 source as porting base | Compile failed: incompatible 26.3 APIs |
 
 The development branch for 26.3 is *not* presently a compatible 26.3 binary; it requires source migration and runtime tests.
 
