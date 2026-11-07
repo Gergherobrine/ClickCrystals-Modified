@@ -1,0 +1,77 @@
+name: Validate ClickCrystals Modified development builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dev-validate.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Dev ${{ matrix.minecraft }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - minecraft: "1.21.11"
+            branch: "dev/1.21.11"
+            java: "21"
+          - minecraft: "26.1.2"
+            branch: "dev/26.1.2"
+            java: "25"
+          - minecraft: "26.2"
+            branch: "dev/26.2"
+            java: "25"
+    steps:
+      - name: Checkout development version
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+      - name: Install JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Verify state operations (standalone Java regression tests)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/script-state-tests
+          javac -d build/script-state-tests \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptState.java \
+            tests/ScriptStateSmokeTest.java
+          java -cp build/script-state-tests ScriptStateSmokeTest
+      - name: Compile Minecraft mod
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build --stacktrace
+      - name: Verify JAR and metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.minecraft }}-1.4.5-dev.1.jar"
+          test -f "$jar"
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.minecraft }}" <<'PY'
+          import json, sys, zipfile
+          jar, game = sys.argv[1:]
+          with zipfile.ZipFile(jar) as f:
+              meta = json.loads(f.read("fabric.mod.json"))
+          assert meta.get("version") == game + "-1.4.5-dev.1", meta
+          assert meta.get("name") == "ClickCrystals Modified", meta
+          print("Version verified", game)
+          PY
+      - name: Upload dev build (not a published release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClickCrystals-Modified-${{ matrix.minecraft }}-1.4.5-dev.1
+          path: build/libs/ClickCrystals-Modified-${{ matrix.minecraft }}-1.4.5-dev.1.jar
+          if-no-files-found: error
+          retention-days: 14
