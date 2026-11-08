@@ -60,8 +60,10 @@ jobs:
             src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/TickTaskQueue.java \
             src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/KeyGestureTracker.java \
             src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/ScriptExtensions.java \
-            tests/TickTaskQueueTest.java tests/KeyGestureTrackerTest.java tests/ScriptExtensionsTest.java
-          for test in TickTaskQueueTest KeyGestureTrackerTest ScriptExtensionsTest; do
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/nav/IncrementalPathfinder.java \
+            tests/TickTaskQueueTest.java tests/KeyGestureTrackerTest.java tests/ScriptExtensionsTest.java \
+            tests/IncrementalPathfinderTest.java
+          for test in TickTaskQueueTest KeyGestureTrackerTest ScriptExtensionsTest IncrementalPathfinderTest; do
             java -cp build/runtime-tests "$test"
           done
       - name: Build all Fabric sources
@@ -84,7 +86,7 @@ jobs:
           assert meta["authors"]==["Gergherobrine"],meta
           for cls in ("SenseValues", "SenseCompare","SenseCmd","IfSenseCmd",
                       "SenseItemCmd","IfItemCmd","SenseSlotCmd","OnceCmd","StateResetCmd",
-                      "TaskCmd","ExtensionCmd","TickTaskQueue","KeyGestureTracker","ScriptExtensions"):
+                      "TaskCmd","ExtensionCmd","TickTaskQueue","KeyGestureTracker","ScriptExtensions","IncrementalPathfinder"):
               assert any(x.endswith("/"+cls+".class") for x in files),cls
           print("verified:",jar)
           PY
