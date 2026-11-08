@@ -1,4 +1,5 @@
 name: Smoke test 1.4.5-dev.5 Minecraft client boot
+# Revalidate the updated CCS sample with await_sense and scheduler callbacks
 on:
   push:
     branches: [main]
