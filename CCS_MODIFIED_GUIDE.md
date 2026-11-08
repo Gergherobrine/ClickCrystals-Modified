@@ -14,7 +14,7 @@
 | `read_sense` | Same as `sense` | Alias |
 | `if_sense` | `if_sense <metric> <operator> [value] then <command>` | Execute a CCS command if a live metric matches |
 | `unless_sense` | Same as `if_sense` | Execute on a valid, nonmatching reading |
-| `sense_item` | `sense_item minecraft:ender_crystal <variable>` | Count items in 9 hotbar slots |
+| `sense_item` | `sense_item minecraft:end_crystal <variable>` | Count items in 9 hotbar slots |
 | `if_item` | `if_item minecraft:glowstone ge 2 then <command>` | Conditional quantity check in 9 hotbar slots |
 | `sense_slot` | `sense_slot 9 <variable>` | Read the ID of the item in hotbar position 1–9 |
 | `once` | `once <variable> then <command>` | Run an action once until reset |
