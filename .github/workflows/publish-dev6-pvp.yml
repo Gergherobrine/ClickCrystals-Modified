@@ -145,3 +145,5 @@ jobs:
               --notes-file DEV_1.4.5-dev.6.md \
               release-assets/*
           fi
+
+# Rebuild after Minecraft 26.x mappings / GUI API compilation fixes.
