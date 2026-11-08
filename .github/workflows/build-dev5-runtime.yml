@@ -87,7 +87,7 @@ jobs:
           assert meta["authors"]==["Gergherobrine"],meta
           for cls in ("SenseValues", "SenseCompare","SenseCmd","IfSenseCmd",
                       "SenseItemCmd","IfItemCmd","SenseSlotCmd","OnceCmd","StateResetCmd",
-                      "TaskCmd","ExtensionCmd","TickTaskQueue","KeyGestureTracker","ScriptExtensions","IncrementalPathfinder","AsyncDecisionBridge"):
+                      "TaskCmd","AwaitSenseCmd","ExtensionCmd","TickTaskQueue","KeyGestureTracker","ScriptExtensions","IncrementalPathfinder","AsyncDecisionBridge"):
               assert any(x.endswith("/"+cls+".class") for x in files),cls
           print("verified:",jar)
           PY
