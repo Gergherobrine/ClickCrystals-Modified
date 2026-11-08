@@ -89,6 +89,28 @@ A planner implementation can run a small number of node expansions per client ti
 
 For ML inference, a trusted Java module can register an action that consumes model outputs, but should run compute on immutable data off the game thread and post validated actions back to the client thread. No neural model is bundled.
 
+### Safe asynchronous planning and ML inference
+
+The bundled `AsyncDecisionBridge` executes **immutable world snapshots** on a small, bounded, daemon-thread pool. When a route or model inference finishes, its result is returned through the client-thread executor. Stale results are invalidated by `cancelAll()` and workers are disposed with `close()`.
+
+Example for a trusted Java extension (adapt the input/result records to your own mod):
+
+```java
+// This is Java integration code, not a CCS script.
+var bridge = new AsyncDecisionBridge(mc::execute);
+bridge.submit(snapshot, data -> pathPlanner.plan(data), plan -> {
+    // Main client thread: validate current world and act on the plan.
+    applyPlanIfStillValid(plan);
+}, error -> reportError(error));
+
+// On world exit, module disable or script reload:
+bridge.cancelAll();
+// When uninstalling the extension:
+bridge.close();
+```
+
+The adapter author is responsible for capturing immutable input data and checking that the result still applies to the current world, dimension, terrain, player position and game tick. Heavy model inference **must not run inside a normal `ext call` callback** on the client thread.
+
 ## Version compatibility
 
 - **Minecraft 1.21.11:** Yarn mappings, Java 21.
