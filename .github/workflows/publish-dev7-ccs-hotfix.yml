@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/publish-dev7-pvp.yml"
+      - ".github/workflows/publish-dev7-ccs-hotfix.yml"
   workflow_dispatch:
 
 permissions:
