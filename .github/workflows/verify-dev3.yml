@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ matrix.branch }}
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
@@ -49,11 +49,22 @@ jobs:
           for test in VersionStringsSmokeTest ScriptStateSmokeTest SenseCompareSmokeTest; do
             java -cp build/smoke "$test"
           done
-      - name: Compile and package Fabric mod
+      - name: Compile and package Fabric mod (network retries)
         shell: bash
         run: |
+          set -euo pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon clean build --stacktrace
+          for attempt in 1 2 3; do
+            if ./gradlew --no-daemon clean build --stacktrace; then
+              exit 0
+            fi
+            echo "Gradle attempt $attempt failed; retrying dependency/distribution download"
+            if [ "$attempt" -eq 1 ]; then
+              sed -i 's#services.gradle.org/distributions#downloads.gradle.org/distributions#g' gradle/wrapper/gradle-wrapper.properties
+            fi
+            sleep 6
+          done
+          exit 1
       - name: Verify JAR version and scripts
         shell: bash
         run: |
