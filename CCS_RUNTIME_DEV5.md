@@ -10,7 +10,7 @@ The runtime supports deterministic game-tick scheduling, keyboard-gesture classi
 
 **Thread rule:** Minecraft state and interactions run on the Minecraft client thread. Computationally heavy algorithms should operate on immutable snapshots, never the live world from worker threads.
 
-**Lifecycle:** named script tasks are cancelled on module disable, script reload, client exit and world disconnection. Repeat tasks are never allowed to create threads. Recursive calls are guarded to prevent stack exhaustion.
+**Lifecycle:** named script tasks are cancelled on module disable, script reload, client exit and world disconnection. Module-registration context is isolated to each source file, eliminating cross-file global-definition leakage. Repeat tasks are never allowed to create threads. Recursive calls are guarded to prevent stack exhaustion.
 
 **Resource safety:** 64 named tasks per script, maximum 32 due executions per tick per script, maximum 32 nested calls, gesture thresholds limited to 1–100 game ticks. The limits exist to prevent freezing or crashing a player's client; they are not anticheat presets.
 
@@ -43,7 +43,7 @@ on key_tap b 5 then await_sense anchor_wait target_anchor_charge gt 0 20 then pr
 on key_tap n 5 then if_state anchor_wait eq timeout then print "No charge observed within 20 ticks"
 ```
 
-`await_sense` writes `waiting`, `matched`, or `timeout` to the named script variable.
+`await_sense` writes `waiting`, `matched`, `timeout`, or `error` to the named script variable. Invalid metric names and callback errors are reported and terminate the pending wait.
 It polls client-observed values only, **not** authoritative server confirmations.
 
 ### Example: short tap vs hold
