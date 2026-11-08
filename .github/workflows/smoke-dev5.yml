@@ -1,0 +1,69 @@
+name: Smoke test 1.4.5-dev.5 Minecraft client boot
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/smoke-dev5.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    name: "Client smoke ${{ matrix.game }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ${{ matrix.image }}
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            branch: "dev/1.21.11"
+            image: "gradle:8.14-jdk21-noble"
+          - game: "26.1.2"
+            branch: "dev/26.1.2"
+            image: "gradle:9.4.1-jdk25-noble"
+          - game: "26.2"
+            branch: "dev/26.2"
+            image: "gradle:9.4.1-jdk25-noble"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+      - name: Install headless display libraries
+        shell: bash
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb xauth libasound2t64 libgl1 libglu1-mesa
+      - name: Verify launch and ClickCrystals Java initialization
+        shell: bash
+        run: |
+          set +e
+          timeout --signal=INT 175s xvfb-run -a -s "-screen 0 1280x720x24" gradle --no-daemon runClient --console=plain >client-smoke.log 2>&1
+          status=$?
+          set -e
+          echo "Client exit status: $status (124 means controlled timeout)"
+          echo "Last log lines:"
+          tail -n 70 client-smoke.log
+          if grep -q "NumberFormatException" client-smoke.log; then
+            echo "Version parsing exception detected"
+            exit 1
+          fi
+          log="$(find . -path '*/.clickcrystals/current.log' -type f -print -quit)"
+          if [ -z "$log" ]; then
+            echo "ClickCrystals dedicated log was not created"
+            exit 1
+          fi
+          tail -n 50 "$log"
+          grep -q "ClickCrystals had loaded successfully!" "$log"
+          echo "ClickCrystals completed mod startup"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-smoke-log-${{ matrix.game }}-dev5
+          path: |
+            client-smoke.log
+            run/.clickcrystals/current.log
+          if-no-files-found: warn
+          retention-days: 7
