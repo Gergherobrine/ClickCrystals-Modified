@@ -289,6 +289,7 @@ public final class ClickCrystals implements ModInitializer, Global {
         // anchors
         system.addModule(new ElytraSwitch());
         system.addModule(new AxeSwap());
+        system.addModule(new AdvancedTriggerBot());
         system.addModule(new BreachSwap());
         system.addModule(new StunSlam());
         system.addModule(new ShieldSwitch());
