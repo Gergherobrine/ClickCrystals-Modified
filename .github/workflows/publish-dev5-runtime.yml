@@ -1,0 +1,87 @@
+name: Publish ClickCrystals Modified 1.4.5-dev.5 Runtime Preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-dev5-runtime.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Verify independent cross-version builds and runtime smoke tests
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run watch 42474779541 --repo "${GITHUB_REPOSITORY}" --interval 10 --exit-status
+          gh run watch 42474783259 --repo "${GITHUB_REPOSITORY}" --interval 10 --exit-status
+      - uses: actions/checkout@v4
+        with:
+          ref: dev/1.21.11
+          path: dev-source
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42474779541
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pattern: clickcrystals-dev5-*
+          merge-multiple: true
+          path: release-assets
+      - name: Check all three JAR builds and attach bilingual docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in 1.21.11 26.1.2 26.2; do
+            jar="release-assets/ClickCrystals-Modified-${game}-1.4.5-dev.5.jar"
+            test -f "$jar"
+            test "$(stat -c%s "$jar")" -gt 100000
+            unzip -t "$jar" >/dev/null
+            python3 - "$jar" "$game" <<'PY'
+          import json,sys,zipfile
+          jar,game=sys.argv[1:]
+          with zipfile.ZipFile(jar) as f:
+              mod=json.loads(f.read("fabric.mod.json"))
+              members=f.namelist()
+          assert mod["version"]==game+"-1.4.5-dev.5",mod
+          assert mod["name"]=="ClickCrystals Modified",mod
+          assert mod["authors"]==["Gergherobrine"],mod
+          for cls in ("ClickScript","TaskCmd","AwaitSenseCmd","ExtensionCmd",
+                      "KeyGestureTracker","TickTaskQueue","AsyncDecisionBridge",
+                      "ScriptExtensions","IncrementalPathfinder"):
+              assert any(x.endswith("/"+cls+".class") for x in members),cls
+          PY
+          done
+          test "$(find release-assets -maxdepth 1 -name '*.jar' | wc -l)" -eq 3
+          cp DEV_1.4.5-dev.5.md CCS_RUNTIME_DEV5.md release-assets/
+          cp dev-source/examples/runtime-engine-demo.ccs release-assets/
+          ( cd release-assets && sha256sum *.jar > SHA256SUMS.txt )
+          ls -lh release-assets
+      - name: Publish GitHub prerelease with binaries and bilingual documentation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          target="$(git -C dev-source rev-parse HEAD)"
+          if gh release view v1.4.5-dev.5 --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release edit v1.4.5-dev.5 --repo "${GITHUB_REPOSITORY}" --notes-file DEV_1.4.5-dev.5.md --prerelease
+            gh release upload v1.4.5-dev.5 --repo "${GITHUB_REPOSITORY}" --clobber release-assets/*
+          else
+            gh release create v1.4.5-dev.5 \
+              --repo "${GITHUB_REPOSITORY}" \
+              --target "$target" \
+              --title "ClickCrystals Modified 1.4.5-dev.5 — Automation Runtime" \
+              --prerelease \
+              --notes-file DEV_1.4.5-dev.5.md \
+              release-assets/*
+          fi
