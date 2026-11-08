@@ -40,7 +40,7 @@ Health, armor, absorption, attack cooldown, fall distance, movement, sprinting, 
 
 ### Limitations
 
-The available CI tests compile all three targets and verify class files and metadata. They do not certify all interactions, PvP modules, resource packs, or third-party launcher combinations. This release offers neither guaranteed exploit compatibility nor anticheat bypass.
+CI compiled all three targets and verified class files and metadata. Additional Xvfb smoke tests started a Minecraft client and confirmed ClickCrystals mod initialization on all three versions. This does not certify gameplay, all PvP modules, resource packs or third-party launcher combinations. No exploit compatibility or anticheat bypass is guaranteed.
 
 Full command syntax and examples: **CCS_MODIFIED_GUIDE.md**, attached to the release and also available in the repository.
 
@@ -82,6 +82,6 @@ Full command syntax and examples: **CCS_MODIFIED_GUIDE.md**, attached to the rel
 
 ### Статус
 
-Все три версии проходят независимую сборку и регрессионные тесты. Компиляция не гарантирует совместимость со всеми модами и лаунчерами. Обход серверных античитов и работа эксплойтов не гарантируются.
+Все три версии успешно собраны, прошли регрессионные тесты и проверку инициализации Minecraft-клиента в виртуальном дисплее. Это не гарантирует работу всех PvP-модулей и совместимость с каждым Android-лаунчером или сборкой модов. Обход античитов и работа эксплойтов не гарантируются.
 
 Полная документация: **CCS_MODIFIED_GUIDE.md**, на английском и русском.
