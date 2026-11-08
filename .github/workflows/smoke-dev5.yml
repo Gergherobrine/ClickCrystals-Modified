@@ -36,6 +36,11 @@ jobs:
         run: |
           apt-get update -qq
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb xauth libasound2t64 libgl1 libglu1-mesa
+      - name: Install ClickScript runtime integration sample
+        shell: bash
+        run: |
+          mkdir -p run/.clickcrystals/scripts
+          cp examples/runtime-engine-demo.ccs run/.clickcrystals/scripts/runtime-engine-demo.ccs
       - name: Verify launch and ClickCrystals Java initialization
         shell: bash
         run: |
@@ -57,7 +62,12 @@ jobs:
           fi
           tail -n 50 "$log"
           grep -q "ClickCrystals had loaded successfully!" "$log"
-          echo "ClickCrystals completed mod startup"
+          if grep -q "Error found in ClickScript command execution" "$log"; then
+            echo "ClickScript integration sample failed to parse"
+            exit 1
+          fi
+          grep -q "runtime-engine-demo.ccs" "$log"
+          echo "Client and new CCS module initialized without script errors"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
