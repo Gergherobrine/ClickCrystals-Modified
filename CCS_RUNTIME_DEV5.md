@@ -23,6 +23,7 @@ The runtime supports deterministic game-tick scheduling, keyboard-gesture classi
 | `task cancel NAME` | Stop a named task | Остановить задачу |
 | `task cancel_all` | Stop every task owned by the script | Остановить все задачи скрипта |
 | `task count VAR` | Save active-task count to state | Число активных задач в переменную |
+| `await_sense anchor_wait target_anchor_charge gt 0 20 then COMMAND` | Wait for an observed game state or time out | Ждать появления состояния до тайм-аута |
 | `on key_tap v 5 then COMMAND` | Short press, measured at release | Короткое нажатие V |
 | `on key_hold v 5 then COMMAND` | One event after five held ticks | Событие после пяти тиков удержания |
 | `on key_held v 5 2 then COMMAND` | Repeat every two ticks while holding | Повторять каждые два тика удержания |
@@ -31,6 +32,19 @@ The runtime supports deterministic game-tick scheduling, keyboard-gesture classi
 | `ext call nav:goto 120 64 -30` | Invoke a trusted registered Java action | Вызвать действие Java-расширения |
 
 **Important:** `nav:goto` and `nav:status` are illustrative extension IDs. This build does not include a finished navigation controller. Another installed Java module must register those actions/sensors before they will work.
+
+### Example: conditional wait instead of fixed delays
+
+```ccs
+def module anchor-diagnostic
+def desc "Wait for the world to report a charged anchor"
+
+on key_tap b 5 then await_sense anchor_wait target_anchor_charge gt 0 20 then print "Anchor charged"
+on key_tap n 5 then if_state anchor_wait eq timeout then print "No charge observed within 20 ticks"
+```
+
+`await_sense` writes `waiting`, `matched`, or `timeout` to the named script variable.
+It polls client-observed values only, **not** authoritative server confirmations.
 
 ### Example: short tap vs hold
 
