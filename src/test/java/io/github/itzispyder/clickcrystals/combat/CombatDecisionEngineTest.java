@@ -153,17 +153,24 @@ public final class CombatDecisionEngineTest {
 
         CombatDecisionEngine engine = new CombatDecisionEngine();
         c = new Case();
-        assertReason("first tick attack", engine.evaluate(c.snap(), DEFAULT), Reason.ATTACK_FULL);
+        Decision first = engine.evaluate(c.snap(), DEFAULT);
+        assertReason("first tick attack", first, Reason.ATTACK_FULL);
+        that("proposal is not a dispatched attack", engine.statistics().attemptedAttacks() == 0);
+        that("commit initial attack", engine.confirmAttack(first, c.tick));
+        that("repeated confirmation cannot double-count", !engine.confirmAttack(first, c.tick));
         assertReason("repeat same tick ignored", engine.evaluate(c.snap(), DEFAULT), Reason.RATE_LIMITED);
         c.tick = 2;
         assertReason("next tick attack limited", engine.evaluate(c.snap(), DEFAULT), Reason.RATE_LIMITED);
         c.tick = 3;
-        assertReason("allowed after 2 ticks", engine.evaluate(c.snap(), DEFAULT), Reason.ATTACK_FULL);
+        Decision second = engine.evaluate(c.snap(), DEFAULT);
+        assertReason("allowed after 2 ticks", second, Reason.ATTACK_FULL);
+        that("commit second attack", engine.confirmAttack(second, c.tick));
         that("attempts tracked; not server hits", engine.statistics().attemptedAttacks() == 2);
 
         engine = new CombatDecisionEngine();
         c = new Case();
-        engine.evaluate(c.snap(), DEFAULT);
+        Decision attempted = engine.evaluate(c.snap(), DEFAULT);
+        engine.confirmAttack(attempted, c.tick);
         c.tick = 2;
         c.hurt = 10;
         engine.evaluate(c.snap(), DEFAULT);
