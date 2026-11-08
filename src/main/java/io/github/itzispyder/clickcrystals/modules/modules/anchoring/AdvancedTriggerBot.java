@@ -273,5 +273,6 @@ public final class AdvancedTriggerBot extends ListenerModule {
         }
 
         InteractionUtils.inputAttack();
+        engine.confirmAttack(decision, tickCounter);
     }
 }
