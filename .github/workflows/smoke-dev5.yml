@@ -78,3 +78,5 @@ jobs:
             run/.clickcrystals/current.log
           if-no-files-found: warn
           retention-days: 7
+
+# Revalidated isolated module registration and await_sense error handling
