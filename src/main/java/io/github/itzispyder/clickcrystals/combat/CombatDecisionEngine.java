@@ -120,6 +120,20 @@ public final class CombatDecisionEngine {
                 resets, observedCombo, lastReason, phase);
     }
 
+    /**
+     * A decision is a proposal, not an executed attack. Call only after the
+     * vanilla one-shot attack path was invoked, after final revalidation.
+     * This records local attempts, never claimed server-confirmed hits.
+     */
+    public boolean confirmAttack(Decision decision, long tick) {
+        if (decision == null || !decision.attack() ||
+                tick != lastSampleTick || tick <= lastAttackTick) return false;
+        lastAttackTick = tick;
+        attempts++;
+        if (decision.critCandidate()) criticalAttempts++;
+        return true;
+    }
+
     private Decision result(boolean attack, Reason why, Profile profile,
                             boolean critical, long nextTick) {
         lastReason = why;
@@ -263,9 +277,6 @@ public final class CombatDecisionEngine {
         else if (observedCombo == 1) phase = Phase.COMBO_PRESSURE;
         else phase = Phase.OPENING;
 
-        lastAttackTick = s.tick();
-        attempts++;
-        if (realCrit) criticalAttempts++;
         Reason reason = realCrit ? Reason.ATTACK_CRITICAL
                 : observedCombo > 0 ? Reason.ATTACK_COMBO
                 : targetMayLeave ? Reason.ATTACK_OPPORTUNITY
