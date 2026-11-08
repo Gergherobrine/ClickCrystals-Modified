@@ -1,64 +1,70 @@
 # ClickCrystals Modified
 
-**Maintained by Gergherobrine.** A configurable Minecraft Java Edition PvP toolkit with expanded ClickScript automation and player-directed controls.
+**Maintained by Gergherobrine.** A Minecraft Java Edition Fabric toolkit for extensible client-side automation, PvP, PvE and survival scripting.
 
 ## Downloads / Загрузки
 
-**Current development preview:** [v1.4.5-dev.3](../../releases/tag/v1.4.5-dev.3)
+**Current development preview: [v1.4.5-dev.5 — Automation Runtime](../../releases/tag/v1.4.5-dev.5)**
 
-**Previous releases:** [v1.4.5-dev.2](../../releases/tag/v1.4.5-dev.2) · [v1.4.4](../../releases/tag/v1.4.4)
+Previous: [v1.4.5-dev.4](../../releases/tag/v1.4.5-dev.4) · [v1.4.4](../../releases/tag/v1.4.4)
 
-Choose **one** Fabric JAR matching your exact Minecraft version. The original ClickCrystals and Modified share the same mod ID and should not be installed simultaneously.
-
-| Minecraft | Java | Development source | Build |
+| Minecraft | Java | Development branch | CI status |
 | --- | --- | --- | --- |
-| 1.21.11 | 21 | [dev/1.21.11](../../tree/dev/1.21.11) | Compiled and initialization-smoke-tested |
-| 26.1.2 | 25 | [dev/26.1.2](../../tree/dev/26.1.2) | Compiled and initialization-smoke-tested against Minecraft 26.1.2 |
-| 26.2 | 25 | [dev/26.2](../../tree/dev/26.2) | Compiled in GitHub Actions |
+| 1.21.11 | 21 | [dev/1.21.11](../../tree/dev/1.21.11) | Build, unit tests and client initialization passed |
+| 26.1.2 | 25 | [dev/26.1.2](../../tree/dev/26.1.2) | Build, unit tests and client initialization passed |
+| 26.2 | 25 | [dev/26.2](../../tree/dev/26.2) | Build, unit tests and client initialization passed |
 
-Minecraft 26.3 is **not** in this preview.
+Minecraft 26.3 is **not** included.
 
-## New: Advanced ClickScript / Расширенный CCS
+### What's new in 1.4.5-dev.5
 
-Eight commands plus an alias add over 50 read-only player, world, inventory and combat measurements.
+- **Keyboard gestures:** `on key_tap`, `on key_hold`, `on key_held`; differentiates a short tap, threshold crossing and continued hold.
+- **Game-tick tasks:** `task after`, `task every`, `task cancel`, `task cancel_all`, `task count`.
+- **Conditional waiting:** `await_sense` runs a command when a client-observed condition becomes true, or terminates on timeout/error.
+- **Java extension SPI:** `ext available`, `ext read`, `ext call` link CCS to trusted sensors and actions registered by installed Fabric/Java modules.
+- **Navigation planning:** an incremental bounded A-star pathfinding core, designed to support future terrain adapters and path followers.
+- **AI/compute foundation:** a bounded asynchronous decision bridge returns immutable-snapshot computations to the main Minecraft thread and discards stale results.
+- **Runtime safety:** main-thread execution, per-script task lifecycles, recursive call guards, task limits, and isolation of source-file module registrations.
+- **Existing CCS:** `sense`, `if_sense`, `unless_sense`, `sense_item`, `if_item`, `sense_slot`, `state`, `gate`, `once` and other scripting functions remain available.
 
-| Function | Syntax | Purpose / Назначение |
-| --- | --- | --- |
-| Snapshot | `sense health hp` | Save the current health to a script variable / Прочитать здоровье |
-| Read-only condition | `if_sense grounded true then print "Grounded"` | Run when the condition is true / Проверка условия |
-| Negative condition | `unless_sense offhand_item eq minecraft:totem_of_undying then print "Need totem"` | Check when a condition is false |
-| Inventory quantity | `sense_item minecraft:end_crystal crystals` | Count crystals in the hotbar / Посчитать кристаллы |
-| Resource guard | `if_item minecraft:glowstone ge 2 then print "Ready"` | Execute only with enough items |
-| Item position | `sense_slot 9 backup` | Read ninth hotbar slot / Прочитать девятый слот |
-| One-shot latch | `once warning then print "Warning"` | Avoid repeated execution / Выполнить один раз |
-| Reset latch | `reset_once warning` | Allow a future activation / Сбросить блокировку |
+**Full documentation:** [CCS_RUNTIME_DEV5.md](CCS_RUNTIME_DEV5.md) (English and Russian).
 
-The existing `state`, `if_state` and `gate` functionality remains supported. No script automatically attacks, swaps items or claims anticheat invisibility merely by reading these sensors.
+### Example — tap and hold
 
-**Full English/Russian syntax and examples:** [CCS_MODIFIED_GUIDE.md](CCS_MODIFIED_GUIDE.md).
+```ccs
+def module gesture-demo
+def desc "Short tap versus held key"
 
-## Interface / Интерфейс
+on key_tap v 5 then print "Tapped V"
+on key_hold v 5 then task every repeated 20 then print "Holding V"
+on key_release v then task cancel repeated
+```
 
-The Modified main screen uses a centered row with **Modules**, **Scripts**, **HUD Editor** and **Source Code** instead of upstream promotional shortcuts. Background news polling and unsolicited update announcements have been disabled.
+A separate **runtime-engine-demo.ccs** example is attached to the release and available in the `examples/` folder of development branches.
 
-### Installation / Установка
+## Installation / Установка
 
-1. Install Minecraft Java Edition with Fabric Loader and a matching Fabric API.
-2. Remove original ClickCrystals or earlier Modified JARs from `.minecraft/mods/`.
-3. Place exactly one JAR corresponding to the Minecraft version into the mods directory.
-4. Start Minecraft and verify that it initializes before enabling custom CCS modules.
-5. Test any custom combat behavior in a local world first.
+1. Install Fabric Loader and the matching Fabric API for your Minecraft version.
+2. Remove the original ClickCrystals and earlier Modified JARs from the `mods` directory. Both variants share the mod ID `clickcrystals`.
+3. Install **one** JAR matching your Minecraft version.
+4. Start Minecraft once without your own CCS scripts. Test new tasks and gestures in a local world before combining them with complex mods.
 
-Скачай один JAR под свою версию Minecraft, установи Fabric Loader и подходящий Fabric API. Удали предыдущие JAR ClickCrystals из папки `mods`, затем проверь запуск без пользовательских скриптов. Перед игрой на серверах сначала протестируй конфигурацию в одиночном мире.
+Установи Fabric Loader, подходящий Fabric API и **один JAR** под нужную версию Minecraft. Удали из `mods` старую версию и оригинальный ClickCrystals. Проверь запуск, а затем тестируй сценарии в одиночном мире.
 
-## Development and tests
+## Architecture notes / Архитектура
 
-- [Java & Fabric build verification for three versions](../../actions/workflows/build-dev3-container.yml)
-- [Development release notes (EN/RU)](DEV_1.4.5-dev.3.md)
-- [Minecraft client startup smoke tests](../../actions/workflows/smoke-dev3.yml)
+The runtime provides infrastructure for sophisticated modules, **not every possible game automation feature out of the box**. Full Baritone-level navigation still requires Minecraft-specific movement, collision, chunk and path-recovery controllers. A trained model and its inference backend must be provided by an independent trusted Java extension. Minecraft server state may differ from client-observed state.
 
-GitHub Actions compiled all three JARs and ran Xvfb-based client initialization smoke tests. Successful startup does not establish full gameplay or Android launcher compatibility.
+Runtime limitations protect game stability; a script cannot have unlimited recursive calls or infinitely many concurrent operations. Anticheat bypass is not guaranteed.
+
+**Testing:**
+- [Three-version Java/Gradle build and regression tests](../../actions/runs/42474779541)
+- [Three-version headless Minecraft client startup with CCS sample](../../actions/runs/42474783259)
+- [Bilingual development release notes](DEV_1.4.5-dev.5.md)
+- [Previous sensor reference](CCS_MODIFIED_GUIDE.md)
+
+Successful CI and startup checks do not certify all third-party mods, Android launchers or PvP gameplay.
 
 ## License / Лицензия
 
-ClickCrystals Modified is an unofficial fork of ClickCrystals, originally created by ImproperIssues and contributors. Licensed under the MIT License. The legally required original copyright notice, `LICENSE`, and `CREDITS.txt` are retained; the fork is independently maintained by **Gergherobrine**.
+ClickCrystals Modified is independently maintained by **Gergherobrine** under the upstream MIT License. The original copyright notice and legally required license attribution remain in `LICENSE` and `CREDITS.txt`. Original source: ClickCrystals by its respective copyright holders.
