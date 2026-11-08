@@ -1,0 +1,84 @@
+name: Verify 1.4.5-dev.3 scripts and UI on three Minecraft targets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-dev3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Minecraft ${{ matrix.game }} 1.4.5-dev.3"
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            branch: "dev/1.21.11"
+            java: "21"
+          - game: "26.1.2"
+            branch: "dev/26.1.2"
+            java: "25"
+          - game: "26.2"
+            branch: "dev/26.2"
+            java: "25"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Standalone regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/smoke
+          javac -d build/smoke \
+            src/main/java/io/github/itzispyder/clickcrystals/client/system/VersionStrings.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptState.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/SenseCompare.java \
+            tests/VersionStringsSmokeTest.java tests/ScriptStateSmokeTest.java tests/SenseCompareSmokeTest.java
+          for test in VersionStringsSmokeTest ScriptStateSmokeTest SenseCompareSmokeTest; do
+            java -cp build/smoke "$test"
+          done
+      - name: Compile and package Fabric mod
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build --stacktrace
+      - name: Verify JAR version and scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.3.jar"
+          test -f "$jar"
+          test "$(stat -c%s "$jar")" -gt 100000
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.game }}" <<'PY'
+          import json,sys,zipfile
+          path,game = sys.argv[1:]
+          with zipfile.ZipFile(path) as z:
+              metadata=json.loads(z.read("fabric.mod.json"))
+              members=z.namelist()
+          assert metadata["version"]==f"{game}-1.4.5-dev.3", metadata
+          assert metadata["name"]=="ClickCrystals Modified"
+          assert "Gergherobrine" in metadata["authors"]
+          for cls in ("SenseValues", "SenseCompare", "SenseCmd", "IfSenseCmd",
+                      "SenseItemCmd", "IfItemCmd", "SenseSlotCmd", "OnceCmd", "StateResetCmd"):
+              assert any(part.endswith("/"+cls+".class") for part in members),cls
+          print("Dev3 JAR inspected:",path)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.3
+          path: build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.3.jar
+          if-no-files-found: error
+          retention-days: 14
