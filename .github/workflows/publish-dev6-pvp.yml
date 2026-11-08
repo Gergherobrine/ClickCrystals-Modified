@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           java -version
           gradle --version
-          grep -E '^\\s*(minecraft_version|mod_version)=' gradle.properties
+          grep -E '^[[:space:]]*(minecraft_version|mod_version)=' gradle.properties
           test -f LICENSE
       - name: Run isolated CCS runtime tests
         shell: bash
