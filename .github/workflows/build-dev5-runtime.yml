@@ -97,3 +97,5 @@ jobs:
           path: build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.5.jar
           retention-days: 14
           if-no-files-found: error
+
+# Revalidated isolated module registration and await_sense error handling
