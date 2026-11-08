@@ -1,45 +1,64 @@
 # ClickCrystals Modified
 
-An independent, MIT-licensed derivative of [ClickCrystals](https://github.com/clickcrystals-development/ClickCrystals). Designed for configurable Minecraft PvP workflows and an improved ClickScript scripting environment.
+**Maintained by Gergherobrine.** A configurable Minecraft Java Edition PvP toolkit with expanded ClickScript automation and player-directed controls.
 
-**Development status:** 1.4.4 preparation — **no stable 1.4.4 release yet**. Do not confuse a development branch with a tested JAR.
+## Downloads / Загрузки
 
-## Minecraft versions
+**Current development preview:** [v1.4.5-dev.3](../../releases/tag/v1.4.5-dev.3)
 
-| Minecraft | Source branch | Upstream foundation | Status |
+**Previous releases:** [v1.4.5-dev.2](../../releases/tag/v1.4.5-dev.2) · [v1.4.4](../../releases/tag/v1.4.4)
+
+Choose **one** Fabric JAR matching your exact Minecraft version. The original ClickCrystals and Modified share the same mod ID and should not be installed simultaneously.
+
+| Minecraft | Java | Development source | Build |
 | --- | --- | --- | --- |
-| 1.21.11 | [mc/1.21.11](../../tree/mc/1.21.11) | ClickCrystals 1.3.9 + Modified CCS state | Compiled successfully in GitHub Actions; runtime test pending |
-| 26.1.2 | [mc/26.1.2](../../tree/mc/26.1.2) | ClickCrystals 1.4.0 (26.1 series) | Build verification pending |
-| 26.2 | [mc/26.2](../../tree/mc/26.2) | ClickCrystals 1.4.3 + Modified CCS state | Build verification pending |
-| 26.3 | [mc/26.3](../../tree/mc/26.3) | 26.2 source as porting base | Compile failed: incompatible 26.3 APIs |
+| 1.21.11 | 21 | [dev/1.21.11](../../tree/dev/1.21.11) | Compiled in GitHub Actions |
+| 26.1.2 | 25 | [dev/26.1.2](../../tree/dev/26.1.2) | Compiled against Minecraft 26.1.2 |
+| 26.2 | 25 | [dev/26.2](../../tree/dev/26.2) | Compiled in GitHub Actions |
 
-The development branch for 26.3 is *not* presently a compatible 26.3 binary; it requires source migration and runtime tests.
+Minecraft 26.3 is **not** in this preview.
 
-## What's implemented
+## New: Advanced ClickScript / Расширенный CCS
 
-On `mc/1.21.11`, `mc/26.1.2`, and `mc/26.2`, ClickScript gains:
-- `state set <name> <value>`, `state add <name> <number>`, `state clear <name>`, `state reset`;
-- `if_state <name> <op> <value> then <command>` with `eq`, `ne`, `gt`, `ge`, `lt`, `le`;
-- `gate <name> <milliseconds> then <command>` for guarded repetitions;
-- a macro lookup fix and removal of unsolicited Discord invitations.
+Eight commands plus an alias add over 50 read-only player, world, inventory and combat measurements.
 
-**26.3 remains a separate, unfinished source migration and cannot yet be distributed as a working build.**
+| Function | Syntax | Purpose / Назначение |
+| --- | --- | --- |
+| Snapshot | `sense health hp` | Save the current health to a script variable / Прочитать здоровье |
+| Read-only condition | `if_sense grounded true then print "Grounded"` | Run when the condition is true / Проверка условия |
+| Negative condition | `unless_sense offhand_item eq minecraft:totem_of_undying then print "Need totem"` | Check when a condition is false |
+| Inventory quantity | `sense_item minecraft:end_crystal crystals` | Count crystals in the hotbar / Посчитать кристаллы |
+| Resource guard | `if_item minecraft:glowstone ge 2 then print "Ready"` | Execute only with enough items |
+| Item position | `sense_slot 9 backup` | Read ninth hotbar slot / Прочитать девятый слот |
+| One-shot latch | `once warning then print "Warning"` | Avoid repeated execution / Выполнить один раз |
+| Reset latch | `reset_once warning` | Allow a future activation / Сбросить блокировку |
 
-## Builds & release
+The existing `state`, `if_state` and `gate` functionality remains supported. No script automatically attacks, swaps items or claims anticheat invisibility merely by reading these sensors.
 
-[Build verification](../../actions/workflows/build-targets.yml) checks four branches independently.
-[Draft release preparation](../../actions/workflows/prepare-release.yml) runs only on manual request. It requires all four JAR builds to pass and prepares a **draft**, not a published release.
+**Full English/Russian syntax and examples:** [CCS_MODIFIED_GUIDE.md](CCS_MODIFIED_GUIDE.md).
 
-[Release notes (English and Russian)](RELEASE_NOTES_1.4.4.md)
+## Interface / Интерфейс
 
-## Installation (English)
+The Modified main screen uses a centered row with **Modules**, **Scripts**, **HUD Editor** and **Source Code** instead of upstream promotional shortcuts. Background news polling and unsolicited update announcements have been disabled.
 
-Install the compatible Fabric Loader and Fabric API, put **one** matching `.jar` in your `.minecraft/mods` directory, and remove the original ClickCrystals JAR before launching. Verify version compatibility and game startup; compilation alone is not sufficient.
+### Installation / Установка
 
-## Установка (Русский)
+1. Install Minecraft Java Edition with Fabric Loader and a matching Fabric API.
+2. Remove original ClickCrystals or earlier Modified JARs from `.minecraft/mods/`.
+3. Place exactly one JAR corresponding to the Minecraft version into the mods directory.
+4. Start Minecraft and verify that it initializes before enabling custom CCS modules.
+5. Test any custom combat behavior in a local world first.
 
-Установи подходящий Fabric Loader и Fabric API, помести **один** JAR нужной версии в `.minecraft/mods/`. Перед запуском удали оригинальный ClickCrystals, чтобы избежать конфликта одинакового mod ID. Одной успешной компиляции недостаточно: нужен запуск и проверка в игре.
+Скачай один JAR под свою версию Minecraft, установи Fabric Loader и подходящий Fabric API. Удали предыдущие JAR ClickCrystals из папки `mods`, затем проверь запуск без пользовательских скриптов. Перед игрой на серверах сначала протестируй конфигурацию в одиночном мире.
 
-## License and attribution
+## Development and tests
 
-Original project: ClickCrystals © 2023 ImproperIssues and contributors. Licensed under MIT. This repository preserves the upstream `LICENSE` and `CREDITS.txt`. This derivative is not officially endorsed by the original project.
+- [Java & Fabric build verification for three versions](../../actions/workflows/build-dev3-container.yml)
+- [Development release notes (EN/RU)](DEV_1.4.5-dev.3.md)
+- [Minecraft client startup smoke tests](../../actions/workflows/smoke-dev3.yml)
+
+GitHub Actions compilation verifies source and packaging, not full gameplay compatibility.
+
+## License / Лицензия
+
+ClickCrystals Modified is an unofficial fork of ClickCrystals, originally created by ImproperIssues and contributors. Licensed under the MIT License. The legally required original copyright notice, `LICENSE`, and `CREDITS.txt` are retained; the fork is independently maintained by **Gergherobrine**.
