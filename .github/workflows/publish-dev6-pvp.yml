@@ -1,0 +1,147 @@
+name: Build and Publish ClickCrystals Modified dev.6 (3 versions)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-dev6-pvp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build:
+    name: "Compile Fabric ${{ matrix.game }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    container:
+      image: ${{ matrix.image }}
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            ref: "fix/pvp-runtime-2026-11-08"
+            image: "gradle:8.14-jdk21-noble"
+          - game: "26.1.2"
+            ref: "fix/pvp-26.1.2-dev6"
+            image: "gradle:9.4.1-jdk25-noble"
+          - game: "26.2"
+            ref: "fix/pvp-26.2-dev6"
+            image: "gradle:9.4.1-jdk25-noble"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+      - name: Print build target and JDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          gradle --version
+          grep -E '^\\s*(minecraft_version|mod_version)=' gradle.properties
+          test -f LICENSE
+      - name: Run isolated CCS runtime tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f tests/TickTaskQueueTest.java && test -f tests/SenseCompareSmokeTest.java; then
+            mkdir -p build/isolate
+            javac -d build/isolate \
+              src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/TickTaskQueue.java \
+              src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptState.java \
+              src/main/java/io/github/itzispyder/clickcrystals/scripting/SenseCompare.java \
+              tests/TickTaskQueueTest.java tests/ScriptStateSmokeTest.java tests/SenseCompareSmokeTest.java
+            for test in TickTaskQueueTest ScriptStateSmokeTest SenseCompareSmokeTest; do
+              java -cp build/isolate "$test"
+            done
+          fi
+      - name: Build Fabric mod
+        run: gradle --no-daemon clean build --stacktrace
+      - name: Validate exact JAR and compiled PvP command
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.6.jar"
+          test -f "$jar"
+          test "$(stat -c%s "$jar")" -gt 100000
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.game }}" <<'PY'
+          import sys,json,zipfile
+          path,game=sys.argv[1:]
+          with zipfile.ZipFile(path) as f:
+              mod=json.loads(f.read("fabric.mod.json"))
+              entries=f.namelist()
+          assert mod["version"] == game+"-1.4.5-dev.6",mod
+          assert mod["name"]=="ClickCrystals Modified",mod
+          assert mod["authors"]==["Gergherobrine"],mod
+          for cls in ("PvpCmd","ClickScript","TickTaskQueue","SenseValues",
+                      "TaskCmd","IfSenseCmd","OnceCmd","ModuleCmd"):
+              assert any(entry.endswith("/"+cls+".class") for entry in entries),cls
+          print("verified",game,path)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clickcrystals-dev6-${{ matrix.game }}
+          path: build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.6.jar
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: "Publish dev.6 GitHub prerelease with 3 JARs"
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pvp-runtime-2026-11-08
+          path: pvp-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: clickcrystals-dev6-*
+          merge-multiple: true
+          path: release-assets
+      - name: Final publication gate and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in 1.21.11 26.1.2 26.2; do
+            jar="release-assets/ClickCrystals-Modified-${game}-1.4.5-dev.6.jar"
+            test -f "$jar"
+            unzip -t "$jar" >/dev/null
+            test "$(stat -c%s "$jar")" -gt 100000
+          done
+          test "$(find release-assets -maxdepth 1 -name '*.jar' | wc -l)" -eq 3
+          cp pvp-scripts/examples/pvp/01_Gergherobrine_AnchorDual_v3.ccs release-assets/
+          cp pvp-scripts/examples/pvp/02_Gergherobrine_SpearSwap_v3.ccs release-assets/
+          cp DEV_1.4.5-dev.6.md release-assets/
+          ( cd release-assets && sha256sum *.jar > SHA256SUMS.txt )
+          cat release-assets/SHA256SUMS.txt
+          ls -lh release-assets
+      - name: Publish bilingual prerelease with usable mod binaries
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v1.4.5-dev.6 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit v1.4.5-dev.6 --repo "$GITHUB_REPOSITORY" \
+              --notes-file DEV_1.4.5-dev.6.md --prerelease
+            gh release upload v1.4.5-dev.6 --repo "$GITHUB_REPOSITORY" \
+              --clobber release-assets/*
+          else
+            gh release create v1.4.5-dev.6 \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "ClickCrystals Modified 1.4.5-dev.6 — PvP Runtime (1.21.11 / 26.1.2 / 26.2)" \
+              --prerelease \
+              --notes-file DEV_1.4.5-dev.6.md \
+              release-assets/*
+          fi
