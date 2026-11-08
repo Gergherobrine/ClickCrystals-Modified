@@ -1,0 +1,69 @@
+name: Publish 1.4.5-dev.3 Advanced CCS Preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-dev3.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: Publish dev3 with three verified Java/Fabric JAR files
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42466450121
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pattern: clickcrystals-dev3-*
+          merge-multiple: true
+          path: assets
+      - name: Verify three game-version JAR files and docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in 1.21.11 26.1.2 26.2; do
+            jar="assets/ClickCrystals-Modified-${game}-1.4.5-dev.3.jar"
+            test -f "$jar"
+            test "$(stat -c%s "$jar")" -gt 100000
+            unzip -t "$jar" >/dev/null
+            python3 - "$jar" "$game" <<'PY'
+          import json,sys,zipfile
+          jar,game=sys.argv[1:]
+          with zipfile.ZipFile(jar) as f:
+              meta=json.loads(f.read("fabric.mod.json"))
+              members=f.namelist()
+          assert meta["version"] == f"{game}-1.4.5-dev.3",meta
+          assert meta["name"]=="ClickCrystals Modified",meta
+          assert meta["authors"]==["Gergherobrine"],meta
+          assert any(p.endswith("/SenseValues.class") for p in members),jar
+          PY
+          done
+          test "$(find assets -maxdepth 1 -name '*.jar' | wc -l)" -eq 3
+          cp CCS_MODIFIED_GUIDE.md DEV_1.4.5-dev.3.md assets/
+          ( cd assets && sha256sum *.jar > SHA256SUMS.txt )
+          ls -lh assets
+      - name: Publish three-JAR GitHub pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.5-dev.3 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "ClickCrystals Modified 1.4.5-dev.3 — Advanced CCS" \
+            --prerelease \
+            --notes-file DEV_1.4.5-dev.3.md \
+            assets/ClickCrystals-Modified-1.21.11-1.4.5-dev.3.jar \
+            assets/ClickCrystals-Modified-26.1.2-1.4.5-dev.3.jar \
+            assets/ClickCrystals-Modified-26.2-1.4.5-dev.3.jar \
+            assets/CCS_MODIFIED_GUIDE.md \
+            assets/DEV_1.4.5-dev.3.md \
+            assets/SHA256SUMS.txt
