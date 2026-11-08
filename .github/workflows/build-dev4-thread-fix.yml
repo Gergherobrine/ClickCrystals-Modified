@@ -1,0 +1,90 @@
+name: Build 1.4.5-dev.4 in pinned Gradle containers
+# verification rerun after 26.x sensor API fixes
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-dev4-container.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Gradle container ${{ matrix.game }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    container:
+      image: ${{ matrix.image }}
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - game: "1.21.11"
+            branch: "dev/1.21.11"
+            image: "gradle:8.14-jdk21-noble"
+          - game: "26.1.2"
+            branch: "dev/26.1.2"
+            image: "gradle:9.4.1-jdk25-noble"
+          - game: "26.2"
+            branch: "dev/26.2"
+            image: "gradle:9.4.1-jdk25-noble"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+      - name: Verify preinstalled build toolchain
+        run: |
+          java -version
+          gradle --version
+      - name: Standalone regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/smoke
+          javac -d build/smoke \
+            src/main/java/io/github/itzispyder/clickcrystals/client/system/VersionStrings.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptState.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/SenseCompare.java \
+            tests/VersionStringsSmokeTest.java tests/ScriptStateSmokeTest.java tests/SenseCompareSmokeTest.java
+          for test in VersionStringsSmokeTest ScriptStateSmokeTest SenseCompareSmokeTest; do
+            java -cp build/smoke "$test"
+          done
+      - name: Verify CCS thread ownership fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'mc.execute(()' src/main/java/io/github/itzispyder/clickcrystals/scripting/syntax/logic/WaitCmd.java
+          grep -q 'mc.execute(() -> dynamicExecutionHelper' src/main/java/io/github/itzispyder/clickcrystals/scripting/ClickScript.java
+          echo 'Scheduled CCS continuations are marshalled through the Minecraft client executor.'
+      - name: Build all Fabric sources
+        run: gradle --no-daemon clean build --stacktrace
+      - name: Verify version and compiled sensor classes
+        shell: bash
+        run: |
+          set -euo pipefail
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.4.jar"
+          test -f "$jar"
+          test "$(stat -c%s "$jar")" -gt 100000
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.game }}" <<'PY'
+          import json,sys,zipfile
+          jar,version=sys.argv[1:]
+          with zipfile.ZipFile(jar) as z:
+              meta=json.loads(z.read("fabric.mod.json"))
+              files=z.namelist()
+          assert meta["version"]==version+"-1.4.5-dev.4",meta
+          assert meta["authors"]==["Gergherobrine"],meta
+          for cls in ("SenseValues", "SenseCompare","SenseCmd","IfSenseCmd",
+                      "SenseItemCmd","IfItemCmd","SenseSlotCmd","OnceCmd","StateResetCmd"):
+              assert any(x.endswith("/"+cls+".class") for x in files),cls
+          print("verified:",jar)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clickcrystals-dev4-${{ matrix.game }}
+          path: build/libs/ClickCrystals-Modified-${{ matrix.game }}-1.4.5-dev.4.jar
+          retention-days: 14
+          if-no-files-found: error
