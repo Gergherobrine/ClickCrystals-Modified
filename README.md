@@ -12,8 +12,8 @@ Choose **one** Fabric JAR matching your exact Minecraft version. The original Cl
 
 | Minecraft | Java | Development source | Build |
 | --- | --- | --- | --- |
-| 1.21.11 | 21 | [dev/1.21.11](../../tree/dev/1.21.11) | Compiled in GitHub Actions |
-| 26.1.2 | 25 | [dev/26.1.2](../../tree/dev/26.1.2) | Compiled against Minecraft 26.1.2 |
+| 1.21.11 | 21 | [dev/1.21.11](../../tree/dev/1.21.11) | Compiled and initialization-smoke-tested |
+| 26.1.2 | 25 | [dev/26.1.2](../../tree/dev/26.1.2) | Compiled and initialization-smoke-tested against Minecraft 26.1.2 |
 | 26.2 | 25 | [dev/26.2](../../tree/dev/26.2) | Compiled in GitHub Actions |
 
 Minecraft 26.3 is **not** in this preview.
@@ -57,7 +57,7 @@ The Modified main screen uses a centered row with **Modules**, **Scripts**, **HU
 - [Development release notes (EN/RU)](DEV_1.4.5-dev.3.md)
 - [Minecraft client startup smoke tests](../../actions/workflows/smoke-dev3.yml)
 
-GitHub Actions compilation verifies source and packaging, not full gameplay compatibility.
+GitHub Actions compiled all three JARs and ran Xvfb-based client initialization smoke tests. Successful startup does not establish full gameplay or Android launcher compatibility.
 
 ## License / Лицензия
 
