@@ -1,0 +1,22 @@
+name: Sync corrected dev3 documentation asset
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/sync-dev3-doc.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Replace release guide with corrected current guide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -f CCS_MODIFIED_GUIDE.md
+          gh release upload v1.4.5-dev.3 CCS_MODIFIED_GUIDE.md --clobber --repo "${GITHUB_REPOSITORY}"
