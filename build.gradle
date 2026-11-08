@@ -97,3 +97,15 @@ publishing {
 kotlin {
     jvmToolchain(21)
 }
+
+tasks.register('verifyCombatDecision', JavaExec) {
+    group = 'verification'
+    description = 'Run the deterministic advanced combat decision regression suite'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('io.github.itzispyder.clickcrystals.combat.CombatDecisionEngineTest')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyCombatDecision')
+}
