@@ -1,4 +1,5 @@
 name: Build 1.4.5-dev.3 in pinned Gradle containers
+# verification rerun after 26.x sensor API fixes
 on:
   push:
     branches: [main]
