@@ -36,11 +36,11 @@ public class EventBus implements Global {
      * @param <E> event type
      */
     public <E extends Event> boolean pass(E event) {
-        subscribedListeners.forEach(listener -> {
-            listenersCache.lookup(listener)
-                    .forEach(method -> this.tryInvoke(method, listener, event));
-        });
-
+        if (event == null) return false;
+        Class<?> eventType = event.getClass();
+        subscribedListeners.forEach(listener ->
+                listenersCache.lookup(listener).forEvent(eventType,
+                        method -> tryInvoke(method, listener, event)));
         return event instanceof Cancellable c && c.isCancelled();
     }
 
@@ -58,22 +58,14 @@ public class EventBus implements Global {
     private <E extends Event> void tryInvoke(EventBusCache.ListenerCacheEntry methodCache, Listener listener, E event) {
         Method method = methodCache.method();
         try {
-            if (!isValid(methodCache, event)) return;
-            method.setAccessible(true);
             method.invoke(listener, event);
         }
         catch (Exception ex) {
-            system.printErr("EventBus dropped a passenger XD");
-            system.printErrF("method=%s, listener=%s, for event emitted %s",
-                    method.getName(),
-                    listener.getClass().getSimpleName(),
-                    event.getClass().getSimpleName()
-            );
+            Throwable cause = ex.getCause() == null ? ex : ex.getCause();
+            system.printErrF("EventBus handler failed: method=%s listener=%s event=%s cause=%s",
+                    method.getName(), listener.getClass().getSimpleName(),
+                    event.getClass().getSimpleName(), cause);
         }
-    }
-
-    private <E extends Event> boolean isValid(EventBusCache.ListenerCacheEntry methodCache, E event) {
-        return event != null && methodCache.methodEventType() == event.getClass();
     }
 
     public Set<Listener> listeners() {

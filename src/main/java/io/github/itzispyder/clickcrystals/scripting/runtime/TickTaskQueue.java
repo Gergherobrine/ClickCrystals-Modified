@@ -79,6 +79,7 @@ public final class TickTaskQueue {
      */
     public synchronized void tick() {
         ticks++;
+        if (tasks.isEmpty()) return;
         int executed=0;
         for (Task task : new ArrayList<>(tasks.values())) {
             if (executed >= MAX_EXECUTIONS_PER_TICK) break;
