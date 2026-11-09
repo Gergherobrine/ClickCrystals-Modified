@@ -80,6 +80,11 @@ jobs:
             src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptSourceReader.java \
             tests/ScriptSourceReaderTest.java
           java -cp build/phoenix-source ScriptSourceReaderTest
+          mkdir -p build/phoenix-perf
+          javac --release ${{ matrix.java }} -d build/phoenix-perf \
+            src/main/java/io/github/itzispyder/clickcrystals/util/performance/AetherPerformance.java \
+            tests/AetherPerformanceTest.java
+          java -cp build/phoenix-perf AetherPerformanceTest
           mkdir -p build/phoenix-events
           javac --release ${{ matrix.java }} -d build/phoenix-events \
             tests/stubs/io/github/itzispyder/clickcrystals/Global.java \
@@ -91,6 +96,7 @@ jobs:
             src/main/java/io/github/itzispyder/clickcrystals/events/Listener.java \
             src/main/java/io/github/itzispyder/clickcrystals/events/EventBusCache.java \
             src/main/java/io/github/itzispyder/clickcrystals/events/EventBus.java \
+            src/main/java/io/github/itzispyder/clickcrystals/util/performance/AetherPerformance.java \
             tests/EventBusDispatchTest.java
           java -cp build/phoenix-events EventBusDispatchTest
           mkdir -p build/phoenix-geometry
@@ -105,7 +111,7 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace clean build
-          grep -Eq "^mod_version=${{ matrix.mc }}-1\\.4\\.5-dev\\.10$" gradle.properties
+          grep -Fq "mod_version=${{ matrix.mc }}-1.4.5-dev.10" gradle.properties
           test -f LICENSE
           grep -F 'Copyright (c) 2023 ImproperIssues' LICENSE
           jar="build/libs/ClickCrystals-Modified-${{ matrix.mc }}-1.4.5-dev.10.jar"
@@ -122,6 +128,7 @@ jobs:
           assert 'ImproperIssues' in mod['authors'],mod
           assert any(n.endswith('/ScriptSourceReader.class') for n in names)
           assert any(n.endswith('/EventBusCache.class') for n in names)
+          assert any(n.endswith('/AetherPerformance.class') for n in names)
           assert not any('private-scripts/' in n for n in names)
           print('PASS artifact:',mc,jar)
           PY
