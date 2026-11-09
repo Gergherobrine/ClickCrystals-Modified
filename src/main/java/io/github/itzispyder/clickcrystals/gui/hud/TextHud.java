@@ -1,6 +1,7 @@
 package io.github.itzispyder.clickcrystals.gui.hud;
 
 import io.github.itzispyder.clickcrystals.modules.Module;
+import io.github.itzispyder.clickcrystals.util.performance.AetherPerformance;
 import io.github.itzispyder.clickcrystals.modules.modules.clickcrystals.InGameHuds;
 import io.github.itzispyder.clickcrystals.util.minecraft.render.RenderUtils;
 import net.minecraft.client.gui.DrawContext;
@@ -15,6 +16,9 @@ public abstract class TextHud extends Hud {
 
     @Override
     public void render(DrawContext context, float tickDelta) {
+        boolean profiling = AetherPerformance.isEnabled();
+        long started = profiling ? System.nanoTime() : 0L;
+        try {
         renderBackdrop(context);
 
         String text = getText();
@@ -23,6 +27,9 @@ public abstract class TextHud extends Hud {
         int x = getX() + getWidth() / 2;
         int y = getY() + (int)(getHeight() * 0.33);
         RenderUtils.drawCenteredText(context, text, x, y, 1.0F, true);
+        } finally {
+            if (profiling) AetherPerformance.recordHud(System.nanoTime() - started);
+        }
     }
 
     @Override

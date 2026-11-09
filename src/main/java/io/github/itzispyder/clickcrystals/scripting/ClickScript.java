@@ -1,6 +1,7 @@
 package io.github.itzispyder.clickcrystals.scripting;
 
 import io.github.itzispyder.clickcrystals.Global;
+import io.github.itzispyder.clickcrystals.util.performance.AetherPerformance;
 import io.github.itzispyder.clickcrystals.scripting.runtime.TickTaskQueue;
 import io.github.itzispyder.clickcrystals.scripting.runtime.ScriptExecutionBudget;
 import io.github.itzispyder.clickcrystals.scripting.runtime.SelectionHistory;
@@ -85,6 +86,9 @@ public class ClickScript implements Global {
     }
 
     private static void dynamicExecutionHelper(ClickScript executor, List<CommandLine> lines) {
+        boolean profiling = AetherPerformance.isEnabled();
+        long started = profiling ? System.nanoTime() : 0L;
+        try {
         for (int i = 0; i < lines.size(); i++) {
             ScriptExecutionBudget.command();
             CommandLine line = lines.get(i);
@@ -105,6 +109,9 @@ public class ClickScript implements Global {
             else {
                 line.execute(executor);
             }
+        }
+        } finally {
+            if (profiling) AetherPerformance.recordCcs(System.nanoTime() - started);
         }
     }
 
