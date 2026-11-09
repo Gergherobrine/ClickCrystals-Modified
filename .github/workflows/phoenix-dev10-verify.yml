@@ -1,0 +1,135 @@
+name: Phoenix dev.10 - three-version runtime verification
+
+on:
+  push:
+    branches: [phoenix/dev10-12111]
+    paths: [.github/workflows/phoenix-dev10-verify.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Minecraft ${{ matrix.mc }} Java ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mc: '1.21.11'
+            java: '21'
+            branch: phoenix/dev10-12111
+            stub: ScreenRect.java
+          - mc: '26.1.2'
+            java: '25'
+            branch: phoenix/dev10-2612
+            stub: ScreenRectangle.java
+          - mc: '26.2'
+            java: '25'
+            branch: phoenix/dev10-262
+            stub: ScreenRectangle.java
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+      - name: Install target JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Run isolated Java runtime, parser, event and GUI regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/phoenix-runtime
+          javac --release ${{ matrix.java }} -d build/phoenix-runtime \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/AsyncDecisionBridge.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/ScriptExecutionBudget.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/InputLeaseManager.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/SelectionHistory.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/PlayerInventorySlotMap.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/TickTaskQueue.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/KeyGestureTracker.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/ScriptExtensions.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/runtime/nav/IncrementalPathfinder.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptState.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptComments.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/SenseCompare.java \
+            src/main/java/io/github/itzispyder/clickcrystals/client/system/VersionStrings.java \
+            tests/AsyncDecisionBridgeTest.java \
+            tests/ScriptExecutionBudgetTest.java \
+            tests/InputLeaseManagerTest.java \
+            tests/SelectionHistoryTest.java \
+            tests/PlayerInventorySlotMapTest.java \
+            tests/TickTaskQueueTest.java \
+            tests/KeyGestureTrackerTest.java \
+            tests/ScriptExtensionsTest.java \
+            tests/IncrementalPathfinderTest.java \
+            tests/ScriptStateSmokeTest.java \
+            tests/ScriptCommentsSmokeTest.java \
+            tests/SenseCompareSmokeTest.java \
+            tests/VersionStringsSmokeTest.java
+          for test in AsyncDecisionBridgeTest ScriptExecutionBudgetTest InputLeaseManagerTest SelectionHistoryTest PlayerInventorySlotMapTest TickTaskQueueTest KeyGestureTrackerTest ScriptExtensionsTest IncrementalPathfinderTest ScriptStateSmokeTest ScriptCommentsSmokeTest SenseCompareSmokeTest VersionStringsSmokeTest; do java -cp build/phoenix-runtime "$test"; done
+          mkdir -p build/phoenix-source
+          javac --release ${{ matrix.java }} -d build/phoenix-source \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptComments.java \
+            src/main/java/io/github/itzispyder/clickcrystals/scripting/ScriptSourceReader.java \
+            tests/ScriptSourceReaderTest.java
+          java -cp build/phoenix-source ScriptSourceReaderTest
+          mkdir -p build/phoenix-events
+          javac --release ${{ matrix.java }} -d build/phoenix-events \
+            tests/stubs/io/github/itzispyder/clickcrystals/Global.java \
+            tests/stubs/org/spongepowered/asm/mixin/injection/callback/CallbackInfo.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/Cancellable.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/Event.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/EventHandler.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/EventPriority.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/Listener.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/EventBusCache.java \
+            src/main/java/io/github/itzispyder/clickcrystals/events/EventBus.java \
+            tests/EventBusDispatchTest.java
+          java -cp build/phoenix-events EventBusDispatchTest
+          mkdir -p build/phoenix-geometry
+          javac --release ${{ matrix.java }} -d build/phoenix-geometry \
+            tests/geometry/${{ matrix.stub }} \
+            src/main/java/io/github/itzispyder/clickcrystals/util/minecraft/render/GuiPixelBounds.java \
+            tests/geometry/GuiPixelBoundsTest.java
+          java -cp build/phoenix-geometry io.github.itzispyder.clickcrystals.util.minecraft.render.GuiPixelBoundsTest
+      - name: Build Minecraft mod and inspect exact artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace clean build
+          grep -Eq "^mod_version=${{ matrix.mc }}-1\\.4\\.5-dev\\.10$" gradle.properties
+          test -f LICENSE
+          grep -F 'Copyright (c) 2023 ImproperIssues' LICENSE
+          jar="build/libs/ClickCrystals-Modified-${{ matrix.mc }}-1.4.5-dev.10.jar"
+          test -s "$jar"
+          unzip -t "$jar" >/dev/null
+          python3 - "$jar" "${{ matrix.mc }}" <<'PY'
+          import json,sys,zipfile
+          jar,mc=sys.argv[1:]
+          with zipfile.ZipFile(jar) as z:
+              mod=json.loads(z.read('fabric.mod.json'))
+              names=z.namelist()
+          assert mod['id']=='clickcrystals',mod
+          assert mod['version']==mc+'-1.4.5-dev.10',mod
+          assert 'ImproperIssues' in mod['authors'],mod
+          assert any(n.endswith('/ScriptSourceReader.class') for n in names)
+          assert any(n.endswith('/EventBusCache.class') for n in names)
+          assert not any('private-scripts/' in n for n in names)
+          print('PASS artifact:',mc,jar)
+          PY
+          sha256sum "$jar"
+      - name: Upload three-version developer verification artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phoenix-dev10-${{ matrix.mc }}
+          path: build/libs/ClickCrystals-Modified-${{ matrix.mc }}-1.4.5-dev.10.jar
+          if-no-files-found: error
+          retention-days: 14
