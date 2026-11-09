@@ -1,6 +1,7 @@
 package io.github.itzispyder.clickcrystals.events;
 
 import io.github.itzispyder.clickcrystals.Global;
+import io.github.itzispyder.clickcrystals.util.performance.AetherPerformance;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.Method;
@@ -38,10 +39,16 @@ public class EventBus implements Global {
     public <E extends Event> boolean pass(E event) {
         if (event == null) return false;
         Class<?> eventType = event.getClass();
-        subscribedListeners.forEach(listener ->
-                listenersCache.lookup(listener).forEvent(eventType,
-                        method -> tryInvoke(method, listener, event)));
-        return event instanceof Cancellable c && c.isCancelled();
+        boolean profiling = AetherPerformance.isEnabled();
+        long started = profiling ? System.nanoTime() : 0L;
+        try {
+            subscribedListeners.forEach(listener ->
+                    listenersCache.lookup(listener).forEvent(eventType,
+                            method -> tryInvoke(method, listener, event)));
+            return event instanceof Cancellable c && c.isCancelled();
+        } finally {
+            if (profiling) AetherPerformance.recordEvent(System.nanoTime() - started);
+        }
     }
 
     public <C extends CallbackInfo, E extends Event> void passWithCallbackInfo(C info, E event, Consumer<CallbackInfo> action) {
