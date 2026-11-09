@@ -8,6 +8,7 @@ import io.github.itzispyder.clickcrystals.client.system.Notification;
 import io.github.itzispyder.clickcrystals.gui.misc.brushes.MobHeadBrush;
 import io.github.itzispyder.clickcrystals.modules.Module;
 import io.github.itzispyder.clickcrystals.scripting.ClickScript;
+import io.github.itzispyder.clickcrystals.util.performance.AetherPerformance;
 import io.github.itzispyder.clickcrystals.util.ArrayUtils;
 import io.github.itzispyder.clickcrystals.util.StringUtils;
 import io.github.itzispyder.clickcrystals.util.minecraft.ChatUtils;
@@ -110,6 +111,32 @@ public class DebugCommand extends Command {
                                     error("Cannot find player.");
                                     return SINGLE_SUCCESS;
                                 })))
+                .then(literal("aether")
+                        .then(literal("on").executes(context -> {
+                            AetherPerformance.setEnabled(true);
+                            ChatUtils.sendPrefixMessage("Aether CPU profiling enabled");
+                            return SINGLE_SUCCESS;
+                        }))
+                        .then(literal("off").executes(context -> {
+                            AetherPerformance.setEnabled(false);
+                            ChatUtils.sendPrefixMessage("Aether CPU profiling disabled");
+                            return SINGLE_SUCCESS;
+                        }))
+                        .then(literal("reset").executes(context -> {
+                            AetherPerformance.setEnabled(false);
+                            AetherPerformance.reset();
+                            ChatUtils.sendPrefixMessage("Aether counters reset; profiling is off");
+                            return SINGLE_SUCCESS;
+                        }))
+                        .then(literal("stats").executes(context -> {
+                            var snap = AetherPerformance.snapshot();
+                            ChatUtils.sendPrefixMessage("Aether CPU profiler: " +
+                                    (AetherPerformance.isEnabled() ? "ON" : "OFF"));
+                            ChatUtils.sendMessage(formatAetherMetric("EventBus", snap.events()));
+                            ChatUtils.sendMessage(formatAetherMetric("CCS runtime", snap.ccs()));
+                            ChatUtils.sendMessage(formatAetherMetric("Text HUD", snap.hud()));
+                            return SINGLE_SUCCESS;
+                        })))
                 .then(literal("notifications").executes(context -> {
                     List<String> l = Notification.QUEUE.stream().map(Notification::getId).toList();
 
@@ -120,6 +147,11 @@ public class DebugCommand extends Command {
                     ChatUtils.sendBlank(2);
                     return SINGLE_SUCCESS;
                 }));
+    }
+
+    private static String formatAetherMetric(String name, AetherPerformance.Metric metric) {
+        return "%s: %d samples, avg %.3f us, max %.3f us".formatted(
+                name, metric.samples(), metric.averageMicros(), metric.maxNanos() / 1000.0);
     }
 
     private void printPlayerStats(Player player, PlayerInfo entry) {
