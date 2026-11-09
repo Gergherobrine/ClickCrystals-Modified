@@ -21,8 +21,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -112,31 +110,7 @@ public class ScriptParser {
     // script specific
 
     public static String readFile(String path) {
-        try {
-            FileReader fr = new FileReader(path);
-            BufferedReader br = new BufferedReader(fr);
-            StringBuilder result = new StringBuilder();
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                line = ScriptComments.stripLine(line);
-                if (line.isEmpty()) continue;
-                result.append(line);
-
-                if (!line.isEmpty()) {
-                    if (!line.endsWith("{") && !line.endsWith("}") && !line.endsWith(";")) {
-                        result.append(";");
-                    }
-                    result.append(" ");
-                }
-            }
-
-            br.close();
-            return result.toString().trim();
-        }
-        catch (Exception ex) {
-            return "";
-        }
+        return ScriptSourceReader.read(path);
     }
 
     public static String condenseLines(String string) {
